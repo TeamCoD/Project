@@ -6,6 +6,7 @@ import {
   Button,
   TouchableOpacity,
   Picker,
+  Dimensions,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Asset } from "expo-asset";
@@ -24,7 +25,7 @@ import * as ThreeAR from "expo-three-ar";
 import { View as GraphicsView } from "expo-graphics";
 import HomeScreen from "./HomeScreen";
 // this.value = "";
-
+const { width, height } = Dimensions.get("window");
 import Clarifai from "clarifai";
 
 const app = new Clarifai.App({
@@ -130,9 +131,9 @@ export default function LinksScreen() {
     this.scene.add(new THREE.AmbientLight(0xffffff));
 
     // Create this cool utility function that let's us see all the raw data points.
-    this.points = new ThreeAR.Points();
-    // Add the points to our scene...
-    this.scene.add(this.points);
+    // this.points = new ThreeAR.Points();
+    // // Add the points to our scene...
+    // this.scene.add(this.points);
   };
 
   const createText = (text) => {
@@ -169,7 +170,7 @@ export default function LinksScreen() {
       },
     ];
 
-    console.log("image array", a4Images);
+    // ---------JOSE--------console.log("image array", a4Images);
 
     // loop through, load each imageonto device,
     // assign uri to new property localUri
@@ -181,7 +182,7 @@ export default function LinksScreen() {
       })
     );
 
-    console.log("array", a4Images);
+    // ---------JOSE--------console.log("array", a4Images);
 
     // loop through, create structure of all images to look for
     let detectionImages = {};
@@ -194,17 +195,17 @@ export default function LinksScreen() {
       };
     });
 
-    console.log("detection ", detectionImages);
+    // ---------JOSE--------console.log("detection ", detectionImages);
 
     const result = await AR.setDetectionImagesAsync(detectionImages);
 
     //setting up
     AR.onAnchorsDidUpdate(({ anchors, eventType }) => {
-      console.log("inside  ", anchors);
+      // ---------JOSE--------console.log("inside  ", anchors);
       for (let anchor of anchors) {
         if (anchor.type === AR.AnchorTypes.Image) {
           const { identifier, image, transform } = anchor;
-          console.log("image", image.name);
+          // ---------JOSE--------console.log("image", image.name);
           if (eventType === AR.AnchorEventTypes.Add) {
             const text = createText(image.name);
             text.position.x = transform[12];
@@ -238,7 +239,7 @@ export default function LinksScreen() {
   const onRender = () => {
     if (this.scene && this.camera) {
       // This will make the points get more rawDataPoints from Expo.AR
-      this.points.update();
+      // this.points.update();
       // Finally render the scene with the AR Camera
       this.renderer.render(this.scene, this.camera);
     }
@@ -260,6 +261,7 @@ export default function LinksScreen() {
     this.text.position.x = 0;
 
     this.scene.add(this.text);
+    // showDetails();
 
     // this.scene.add(...json.text);
 
@@ -341,7 +343,7 @@ export default function LinksScreen() {
       const predict = await predictModel(base64, modelName);
       const result = 1 * predict.outputs[0].data.concepts[0].value;
       if (result > 0.9) {
-        console.log("WE INNIT ", result);
+        console.log("Result: ", result);
         setWord(modelName);
         setScanned(true);
         return;
@@ -357,7 +359,7 @@ export default function LinksScreen() {
 
   useEffect(() => {
     if (!scanned && word) {
-      console.log("yo whatshappening");
+      console.log("UseEffect: Scanning Again");
       scan();
       setTimeout(() => {
         setNotDetected(true);
@@ -366,13 +368,8 @@ export default function LinksScreen() {
   }, [scanned]);
 
   const capturePhoto = async () => {
-    console.log(1);
-    console.log(1.5, this.camera2);
     if (this.camera2) {
-      console.log(2);
       const photo = await this.camera2.takePictureAsync();
-      console.log(3);
-      console.log("photo", photo.uri);
       return photo.uri;
     }
   };
@@ -394,6 +391,42 @@ export default function LinksScreen() {
     return response;
   };
 
+  const showDetails = async () => {
+    // var img = new THREE.MeshBasicMaterial({
+    //   //CHANGED to MeshBasicMaterial
+    //   map: THREE.TextureLoader.load(require("../assets/images/plane.png")),
+    // });
+    // img.map.needsUpdate = true;
+    const texture = await ExpoTHREE.loadAsync(
+      require("../assets/images/Mouse.png")
+    );
+    // var texture = new THREE.TextureLoader().load(
+    //   "https://miro.medium.com/max/10368/1*o8tTGo3vsocTKnCUyz0wHA.jpeg"
+    // );
+
+    // immediately use the texture for material creation
+    var material = new THREE.MeshBasicMaterial({ map: texture });
+
+    // const geometry = new THREE.PlaneGeometry(0.3, 0.3);
+    // // Simple color material
+    // const material = new THREE.MeshPhongMaterial({
+    //   color: "white",
+    // });
+
+    // // Combine our geometry and material
+    this.plane = new THREE.Mesh(geometry, material);
+    this.plane.overdraw = true;
+    // this.text = createText("Hello World");
+    // // Place the box 0.4 meters in front of us.
+    this.plane.position.z = -0.4;
+    this.plane.position.y = -0.2;
+
+    // this.text.position.z = -0.5;
+
+    this.scene.add(this.plane);
+    // this.scene.add(this.text);
+  };
+
   const playSound = async () => {
     const soundObject = new Audio.Sound();
     try {
@@ -404,6 +437,70 @@ export default function LinksScreen() {
       // An error occurred!
       console.log("error", error);
     }
+  };
+
+  const rayCaster = () => {
+    var raycaster = new THREE.Raycaster(); // create once
+    var mouse = new THREE.Vector2(); // create once
+
+    console.log("---RAYCASTER---", raycaster);
+    console.log("--MOUSE--", mouse);
+
+    // mouse.x = 0;
+    // mouse.y = 0;
+
+    raycaster.setFromCamera(mouse, this.camera);
+
+    console.log("---this.text---", this.text);
+    var intersects = raycaster.intersectObjects([this.text]);
+    // this.scene.remove(intersects);
+    // console.log(
+    //   "---INTERSECTS---",
+    //   // intersects[0].object.getObjectByName("geometries")
+    //   JSON.stringify(intersects, null, 2)
+    // );
+    if (intersects.length !== 0) {
+      console.log(
+        "---INTERSECTS---",
+        intersects[0].object
+        // intersects[0].object.geometries[0].parameters.depth
+      );
+      intersects[0].object.material.color.set(0xffff00);
+    }
+  };
+
+  const addCube = () => {
+    // Make a cube - notice that each unit is 1 meter in real life, we will make our box 0.1 meters
+    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    // Simple color material
+    const material = new THREE.MeshPhongMaterial({
+      color: "red",
+    });
+
+    // Combine our geometry and material
+    this.cube = new THREE.Mesh(geometry, material);
+    // Place the box 0.4 meters in front of us.
+    this.cube.position.z = -0.8;
+
+    // Add the cube to the scene
+    this.scene.add(this.cube);
+  };
+
+  const up = () => {
+    // this.text.position.z = -0.4;
+    // this.scene.remove(this.text);
+    this.cube.position.y = this.cube.position.y + 0.1;
+
+    // this.scene.add(this.text);
+  };
+
+  const rotate = () => {
+    // this.cube.remove();
+    this.cube.position.y = this.cube.position.y + 0.1;
+
+    this.cube.rotateZ(2);
+    this.cube.rotateY(2);
+    this.cube.rotateX(2);
   };
 
   // You need to add the `isArEnabled` & `arTrackingConfiguration` props.
@@ -499,16 +596,31 @@ export default function LinksScreen() {
         <TouchableOpacity onPress={() => text()}>
           <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Text</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => translate()}>
+        {/* <TouchableOpacity onPress={() => translate()}>
           <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
             Translate
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => playSound()}>
-          {/* <Icon name="ios-microphone" type="ionicon" size={30} color="black" /> */}
+        <TouchableOpacity onPress={() => showDetails()}>
           <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
-            Audio
+            Details
           </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => playSound()}>
+          <Icon name="ios-microphone" type="ionicon" size={30} color="white" />
+        </TouchableOpacity> */}
+        <TouchableOpacity onPress={() => addCube()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
+            addCube
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => rotate()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
+            rotate
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => up()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Up</Text>
         </TouchableOpacity>
 
         {/* 
