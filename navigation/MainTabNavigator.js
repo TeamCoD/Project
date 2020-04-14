@@ -11,87 +11,85 @@ import BarCodeScreen from "../screens/BarCodeScreen";
 
 const config = Platform.select({
   web: { headerMode: "screen" },
-  default: {}
+  default: {},
 });
 
 const HomeStack = createStackNavigator(
   {
-    Home: HomeScreen
+    Home: HomeScreen,
   },
   config
 );
 
 HomeStack.navigationOptions = {
   tabBarLabel: "Home",
-  tabBarIcon: ({ focused }) => (
-    <TabBarIcon
-      focused={focused}
-      name={
-        Platform.OS === "ios"
-          ? `ios-information-circle${focused ? "" : "-outline"}`
-          : "md-information-circle"
-      }
-    />
-  )
+  // tabBarIcon: ({ focused }) => (
+  //   // <TabBarIcon
+  //   //   focused={focused}
+  //   //   name={
+  //   //     Platform.OS === "ios"
+  //   //       ? `ios-information-circle${focused ? "" : "-outline"}`
+  //   //       : "md-information-circle"
+  //   //   }
+  //   // />
+  // )
 };
 
 HomeStack.path = "";
 
 const LinksStack = createStackNavigator(
   {
-    Links: LinksScreen
+    Links: LinksScreen,
   },
   config
 );
 
 LinksStack.navigationOptions = {
   tabBarLabel: "Links",
-  tabBarIcon: ({ focused }) => (
-    <TabBarIcon
-      focused={focused}
-      name={Platform.OS === "ios" ? "ios-link" : "md-link"}
-    />
-  )
+  // tabBarIcon: ({ focused }) => (
+  //   <TabBarIcon
+  //     focused={focused}
+  //     name={Platform.OS === "ios" ? "ios-link" : "md-link"}
+  //   />
+  // )
 };
 
 LinksStack.path = "";
 
 const SettingsStack = createStackNavigator(
   {
-    Settings: SettingsScreen
+    Settings: SettingsScreen,
   },
   config
 );
 
 SettingsStack.navigationOptions = {
   tabBarLabel: "Settings",
-  tabBarIcon: ({ focused }) => (
-    <TabBarIcon
-      focused={focused}
-      name={Platform.OS === "ios" ? "ios-options" : "md-options"}
-    />
-  )
+  // tabBarIcon: ({ focused }) => (
+  //   <TabBarIcon
+  //     focused={focused}
+  //     name={Platform.OS === "ios" ? "ios-options" : "md-options"}
+  //   />
+  // )
 };
 
 SettingsStack.path = "";
 
-
-
 const BarCodeStack = createStackNavigator(
   {
-    BarCode: BarCodeScreen
+    BarCode: BarCodeScreen,
   },
   config
 );
 
 BarCodeStack.navigationOptions = {
   tabBarLabel: "BarCode",
-  tabBarIcon: ({ focused }) => (
-    <TabBarIcon
-      focused={focused}
-      name={Platform.OS === "ios" ? "ios-options" : "md-options"}
-    />
-  )
+  // tabBarIcon: ({ focused }) => (
+  //   <TabBarIcon
+  //     focused={focused}
+  //     name={Platform.OS === "ios" ? "ios-options" : "md-options"}
+  //   />
+  // )
 };
 
 BarCodeStack.path = "";
@@ -100,7 +98,7 @@ const tabNavigator = createBottomTabNavigator({
   HomeStack,
   LinksStack,
   BarCodeStack,
-  SettingsStack
+  SettingsStack,
 });
 
 tabNavigator.path = "";

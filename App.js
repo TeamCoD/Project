@@ -8,7 +8,7 @@ import {
   StyleSheet,
   View,
   TouchableOpacity,
-  Text
+  Text,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Camera } from "expo-camera";
@@ -19,18 +19,18 @@ import AppNavigator from "./navigation/AppNavigator";
 import Clarifai from "clarifai";
 
 const app = new Clarifai.App({
-  apiKey: "53f2015ac28941f391f9acf6116309f6"
+  apiKey: "53f2015ac28941f391f9acf6116309f6",
 });
 process.nextTick = setImmediate;
 
 import Auth from "./auth";
 
 //adding the inputs
-const makeInput = async base64 => {
+const makeInput = async (base64) => {
   //create a new array based on inputs to use below
   const response = await app.inputs.create({
     base64,
-    concepts: [{ id: "me" }]
+    concepts: [{ id: "Mouse" }],
   });
   console.log("response ", response);
   return response;
@@ -39,19 +39,19 @@ const makeInput = async base64 => {
 //testing();
 
 const makeModel = async () => {
-  const response = await app.models.create("faces1", [{ id: "me" }]);
+  const response = await app.models.create("Mouse", [{ id: "Mouse" }]);
   console.log("model res", response);
   return response;
 };
 
 const trainModel = async () => {
-  const response = await app.models.train("faces1");
+  const response = await app.models.train("Mouse");
   console.log(response);
   return response;
 };
 
-const predictModel = async base64 => {
-  const response = app.models.predict({ id: "faces1" }, base64);
+const predictModel = async (base64) => {
+  const response = app.models.predict({ id: "Mouse" }, base64);
   console.log("predict res ", response);
   return response;
 };
@@ -77,7 +77,7 @@ export default function App(props) {
   //let FACES = null;
   const findModel = async () => {
     try {
-      setFACES(await app.models.get("faces1"));
+      setFACES(await app.models.get("Mouse"));
     } catch (error) {
       setFACES(null);
       console.log("faces model ", FACES);
@@ -133,7 +133,7 @@ export default function App(props) {
     }
   };
 
-  const resize = async uri => {
+  const resize = async (uri) => {
     console.log("entering resize");
     let manipulatedImage = await ImageManipulator.manipulateAsync(
       uri,
@@ -159,8 +159,8 @@ export default function App(props) {
     return (
       <Camera
         style={{ flex: 1 }}
-        type={Camera.Constants.Type.front}
-        ref={ref => {
+        type={Camera.Constants.Type.back}
+        ref={(ref) => {
           this.camera = ref;
         }}
       >
@@ -170,14 +170,14 @@ export default function App(props) {
             backgroundColor: "transparent",
             flexDirection: "row",
             justifyContent: "space-between",
-            width: "50%"
+            width: "50%",
           }}
         >
           <TouchableOpacity
             style={{
               // flex: 0.1,
               alignSelf: "flex-end",
-              alignItems: "center"
+              alignItems: "center",
             }}
             onPress={handleFacesDetected}
           >
@@ -202,15 +202,15 @@ async function loadResourcesAsync() {
   await Promise.all([
     Asset.loadAsync([
       require("./assets/images/robot-dev.png"),
-      require("./assets/images/robot-prod.png")
+      require("./assets/images/robot-prod.png"),
     ]),
     Font.loadAsync({
       // This is the font that we are using for our tab bar
       ...Ionicons.font,
       // We include SpaceMono because we use it in HomeScreen.js. Feel free to
       // remove this if you are not using it in your app
-      "space-mono": require("./assets/fonts/SpaceMono-Regular.ttf")
-    })
+      "space-mono": require("./assets/fonts/SpaceMono-Regular.ttf"),
+    }),
   ]);
 }
 
@@ -227,6 +227,6 @@ function handleFinishLoading(setLoadingComplete) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff"
-  }
+    backgroundColor: "#fff",
+  },
 });

@@ -1,7 +1,20 @@
-import { ScrollView, StyleSheet } from "react-native";
-import React, { useEffect } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  Text,
+  Button,
+  TouchableOpacity,
+  Picker,
+} from "react-native";
+import React, { useEffect, useState } from "react";
 import { Asset } from "expo-asset";
 import { AR } from "expo";
+import { Camera } from "expo-camera";
+import * as ImageManipulator from "expo-image-manipulator";
+import { Audio } from "expo-av";
+import { Icon } from "react-native-elements";
+
 // Let's alias ExpoTHREE.AR as ThreeAR so it doesn't collide with Expo.AR.
 import ExpoTHREE, { THREE } from "expo-three";
 import * as ThreeAR from "expo-three-ar";
@@ -9,11 +22,32 @@ import * as ThreeAR from "expo-three-ar";
 // expo-graphics manages the setup/teardown of the gl context/ar session, creates a frame-loop, and observes size/orientation changes.
 // it also provides debug information with `isArCameraStateEnabled`
 import { View as GraphicsView } from "expo-graphics";
+import HomeScreen from "./HomeScreen";
+// this.value = "";
+
+import Clarifai from "clarifai";
+
+const app = new Clarifai.App({
+  apiKey: "53f2015ac28941f391f9acf6116309f6",
+});
+process.nextTick = setImmediate;
 
 export default function LinksScreen() {
+  const [scanned, setScanned] = useState(false);
+  const [language, setLanguage] = useState("fr");
+  const [word, setWord] = useState(null);
+  const [camera, setCamera] = useState(null);
+  const [notDetected, setNotDetected] = useState(null);
+
+  const sounds = {
+    Mouse: require("../assets/sound/Mouse.mp3"),
+    Pen: require("../assets/sound/pen.mp3"),
+  };
+  // const [scanned, setScanned] = useState(false);
   useEffect(() => {
     THREE.suppressExpoWarnings(true);
 
+    // this.value = "";
     // ThreeAR.suppressWarnings();
     setUpImages();
   }, []);
@@ -28,9 +62,9 @@ export default function LinksScreen() {
       gl,
       pixelRatio,
       width,
-      height
+      height,
     });
-
+    // console.log("this.render =>", this.renderer);
     // We will add all of our meshes to this scene.
     this.scene = new THREE.Scene();
     // This will create a camera texture and use it as the background for our scene
@@ -75,7 +109,7 @@ export default function LinksScreen() {
     // this.sphere.position.z = -0.4;
     // this.scene.add(this.sphere);
 
-    const fontJSON = require("../node_modules/three/examples/fonts/helvetiker_regular.typeface.json");
+    const fontJSON = require("../node_modules/three/examples/fonts/gentilis_regular.typeface.json");
     this.font = new THREE.Font(fontJSON);
     // const geometry = new THREE.TextGeometry("plane", {
     //   font: font,
@@ -101,17 +135,19 @@ export default function LinksScreen() {
     this.scene.add(this.points);
   };
 
-  const createText = text => {
+  const createText = (text) => {
     const geometry = new THREE.TextGeometry(text, {
-      font: this.font,
-      size: 0.1,
+      font: new THREE.Font(
+        require("../node_modules/three/examples/fonts/gentilis_regular.typeface.json")
+      ),
+      size: 0.02,
       height: 0.1,
       curveSegments: 12,
       bevelEnabled: false,
       bevelThickness: 0,
       bevelSize: 0,
       bevelOffset: 0.1,
-      bevelSegments: 0
+      bevelSegments: 0,
     });
     const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     return new THREE.Mesh(geometry, material);
@@ -123,14 +159,14 @@ export default function LinksScreen() {
         name: "Plane",
         file: require("../assets/images/plane.png"),
         height: 0.287,
-        width: 0.2
+        width: 0.2,
       },
       {
         name: "Mountain",
         file: require("../assets/images/mountains.jpg"),
         height: 0.2,
-        width: 0.287
-      }
+        width: 0.287,
+      },
     ];
 
     console.log("image array", a4Images);
@@ -138,7 +174,7 @@ export default function LinksScreen() {
     // loop through, load each imageonto device,
     // assign uri to new property localUri
     await Promise.all(
-      a4Images.map(async image => {
+      a4Images.map(async (image) => {
         const asset = Asset.fromModule(image.file);
         await asset.downloadAsync();
         image.localUri = asset.localUri;
@@ -149,12 +185,12 @@ export default function LinksScreen() {
 
     // loop through, create structure of all images to look for
     let detectionImages = {};
-    a4Images.map(image => {
+    a4Images.map((image) => {
       detectionImages[image.name] = {
         uri: image.localUri,
         name: image.name,
         height: image.height,
-        width: image.width
+        width: image.width,
       };
     });
 
@@ -208,21 +244,293 @@ export default function LinksScreen() {
     }
   };
 
+  const text = async () => {
+    //const text = createText("Hello");
+    //console.log("testing() =========================> ", text);
+    const apiKey =
+      "trnsl.1.1.20200405T190411Z.3952e7ff33c5cc91.6fe34ca177fffee6eba1a6656ab45f443284c9f0";
+
+    const response = await fetch(
+      `https://translate.yandex.net/api/v1.5/tr.json/translate?key=${apiKey}&text=Hello&lang=fr`
+    );
+
+    const json = await response.json();
+    this.text = createText(word);
+    this.text.position.z = -0.4;
+    this.text.position.x = 0;
+
+    this.scene.add(this.text);
+
+    // this.scene.add(...json.text);
+
+    // const apiKey =
+    // "trnsl.1.1.20200405T190411Z.3952e7ff33c5cc91.6fe34ca177fffee6eba1a6656ab45f443284c9f0";
+
+    // yandex.translate("hello ", { to: "fr" }, function (err, res) {
+    //   console.log(res.text);
+    // });
+
+    // // Make a cube - notice that each unit is 1 meter in real life, we will make our box 0.1 meters
+    // const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    // // // Simple color material
+    // const material = new THREE.MeshPhongMaterial({
+    //   color: "red",
+    // });
+
+    // // // Combine our geometry and material
+    // this.cube = new THREE.Mesh(geometry, material);
+    // // // Place the box 0.4 meters in front of us.
+    // this.cube.position.z = -0.8;
+
+    // // // Add the cube to the scene
+    // this.scene.add(this.cube);
+  };
+
+  const translate = async () => {
+    if (this.text2) {
+      this.scene.remove(this.text2);
+    }
+    //const text = createText("Hello");
+    //console.log("testing() =========================> ", text);
+    const apiKey =
+      "trnsl.1.1.20200405T190411Z.3952e7ff33c5cc91.6fe34ca177fffee6eba1a6656ab45f443284c9f0";
+
+    const response = await fetch(
+      `https://translate.yandex.net/api/v1.5/tr.json/translate?key=${apiKey}&text=${word}&lang=${language}`
+    );
+
+    const json = await response.json();
+    this.text2 = createText(json.text[0]);
+    this.text2.position.z = -0.4;
+    this.text2.position.x = 0;
+    this.text2.position.y = -0.2;
+
+    // const soundObject = new Audio.Sound();
+    // try {
+    //   await soundObject.loadAsync(sounds[word]);
+    //   await soundObject.playAsync();
+    //   // Your sound is playing!
+    // } catch (error) {
+    //   // An error occurred!
+    //   console.log("error", error);
+    // }
+
+    this.scene.add(this.text2);
+  };
+
+  const scan = async () => {
+    // if (!camera) {
+    //   setCamera(this.camera2);
+    // } else {
+    //   this.camera2 = camera;
+    // }
+    setNotDetected(false);
+
+    let lists = await app.models.list();
+    let listArray = Object.entries(lists);
+    listArray = listArray.slice(0, 2);
+    let modelNames = [];
+    listArray.map((item) => {
+      modelNames.push(item[1].name);
+    });
+    console.log("model names ", modelNames);
+    const uri = await capturePhoto();
+    const base64 = await resize(uri);
+
+    modelNames.forEach(async (modelName) => {
+      const predict = await predictModel(base64, modelName);
+      const result = 1 * predict.outputs[0].data.concepts[0].value;
+      if (result > 0.9) {
+        console.log("WE INNIT ", result);
+        setWord(modelName);
+        setScanned(true);
+        return;
+      }
+    });
+    // console.log("listArray =>", listArray);
+    // lists.forEach((list) => console.log(list.name));
+    // var str = JSON.stringify(obj, null, 2);
+    // console.log("list", JSON.stringify(lists, null, 2));
+    // console.log("model Size", Object.entries(lists).length);
+    // console.log("model Length", lists.length);
+  };
+
+  useEffect(() => {
+    if (!scanned && word) {
+      console.log("yo whatshappening");
+      scan();
+      setTimeout(() => {
+        setNotDetected(true);
+      }, 5000);
+    }
+  }, [scanned]);
+
+  const capturePhoto = async () => {
+    console.log(1);
+    console.log(1.5, this.camera2);
+    if (this.camera2) {
+      console.log(2);
+      const photo = await this.camera2.takePictureAsync();
+      console.log(3);
+      console.log("photo", photo.uri);
+      return photo.uri;
+    }
+  };
+
+  const resize = async (uri) => {
+    console.log("entering resize");
+    let manipulatedImage = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { height: 150, width: 150 } }],
+      { compress: 0, base64: true }
+    );
+    // console.log("exiting resize");
+    return manipulatedImage.base64;
+  };
+
+  const predictModel = async (base64, modelName) => {
+    const response = await app.models.predict({ id: modelName }, base64);
+    // console.log("predict res ", response);
+    return response;
+  };
+
+  const playSound = async () => {
+    const soundObject = new Audio.Sound();
+    try {
+      await soundObject.loadAsync(sounds[word]);
+      await soundObject.playAsync();
+      // Your sound is playing!
+    } catch (error) {
+      // An error occurred!
+      console.log("error", error);
+    }
+  };
+
   // You need to add the `isArEnabled` & `arTrackingConfiguration` props.
   // `isArRunningStateEnabled` Will show us the play/pause button in the corner.
   // `isArCameraStateEnabled` Will render the camera tracking information on the screen.
   // `arTrackingConfiguration` denotes which camera the AR Session will use.
   // World for rear, Face for front (iPhone X only)
-  return (
-    <GraphicsView
+  return !scanned ? (
+    <Camera
       style={{ flex: 1 }}
-      onContextCreate={onContextCreate}
-      onRender={onRender}
-      onResize={onResize}
-      isArEnabled
-      isArRunningStateEnabled
-      isArCameraStateEnabled
-      arTrackingConfiguration={"ARWorldTrackingConfiguration"}
-    />
+      type={Camera.Constants.Type.back}
+      ref={(ref) => {
+        this.camera2 = ref;
+      }}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "transparent",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          width: "50%",
+        }}
+      >
+        {word && (
+          <Text
+            style={{
+              position: "absolute",
+              top: "20%",
+              left: "20%",
+              fontSize: 30,
+              color: "white",
+            }}
+          >
+            Keep Camera Still Scanning....
+          </Text>
+        )}
+        <TouchableOpacity
+          style={{
+            // flex: 0.1,
+            alignSelf: "flex-end",
+            alignItems: "center",
+          }}
+          onPress={() => scan()}
+        >
+          {!word && (
+            <Text style={{ fontSize: 18, marginBottom: 10, color: "white" }}>
+              Scan Photo
+            </Text>
+          )}
+          {notDetected && (
+            <Text style={{ fontSize: 18, marginBottom: 10, color: "white" }}>
+              Scan Again
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </Camera>
+  ) : (
+    <View style={{ flex: 1 }}>
+      <GraphicsView
+        style={{
+          height: "100%",
+          width: "100%",
+          alignItems: "stretch",
+          // position: "absolute",
+          // zIndex: -1,
+        }}
+        onContextCreate={onContextCreate}
+        onRender={onRender}
+        onResize={onResize}
+        isArEnabled
+        // isArRunningStateEnabled
+        isArCameraStateEnabled
+        arTrackingConfiguration={"ARWorldTrackingConfiguration"}
+      />
+
+      <View
+        style={{
+          flexDirection: "row",
+          backgroundColor: "transparent",
+          // flex: 1,
+          position: "absolute",
+          top: "95%",
+          zIndex: 1,
+        }}
+      >
+        <TouchableOpacity onPress={() => setScanned(false)}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
+            Scan Again
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => text()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Text</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => translate()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
+            Translate
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => playSound()}>
+          {/* <Icon name="ios-microphone" type="ionicon" size={30} color="black" /> */}
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
+            Audio
+          </Text>
+        </TouchableOpacity>
+
+        {/* 
+        <TouchableOpacity onPress={() => translate()}>
+          <Text style={{ fontSize: 18, marginBottom: 10, color: "white" }}>Translate</Text>
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Text>Text</Text>
+        </TouchableOpacity> */}
+        {/* <Button title="Text" onPress={() => text()} />
+        <Button title="Translate" onPress={() => translate()} />
+        <Button title="Model" onPress={() => getModels()} />
+        <Button title="Scan Again" onPress={() => setScanned(false)} /> */}
+        {/* <Picker
+          selectedValue={language}
+          style={{ height: 150, width: 150 }}
+          onValueChange={(itemValue, itemIndex) => setLanguage(itemValue)}
+        >
+          <Picker.Item label="English" value="en" />
+          <Picker.Item label="French" value="fr" />
+        </Picker> */}
+      </View>
+    </View>
   );
 }
