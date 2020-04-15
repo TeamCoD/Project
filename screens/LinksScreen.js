@@ -6,6 +6,7 @@ import {
   Button,
   TouchableOpacity,
   Picker,
+  PanResponder,
   Dimensions,
 } from "react-native";
 import React, { useEffect, useState } from "react";
@@ -257,7 +258,7 @@ export default function LinksScreen() {
 
     const json = await response.json();
     this.text = createText(word);
-    this.text.position.z = -0.4;
+    this.text.position.z = -0.2;
     this.text.position.x = 0;
 
     this.scene.add(this.text);
@@ -439,15 +440,19 @@ export default function LinksScreen() {
     }
   };
 
-  const rayCaster = () => {
+  const rayCaster = (newX, newY) => {
     var raycaster = new THREE.Raycaster(); // create once
-    var mouse = new THREE.Vector2(); // create once
+    // var mouse = new THREE.Vector2(
+    //   (newX / width) * 2 - 1,
+    //   -(newY / height) * 2 + 1
+    // ); // create once
+    var mouse = new THREE.Vector2(0, 0.99);
 
     console.log("---RAYCASTER---", raycaster);
     console.log("--MOUSE--", mouse);
-
-    // mouse.x = 0;
-    // mouse.y = 0;
+    // (355/375 * -1)
+    // this.mouse.x = (event.clientX / width) * 2 - 1;
+    // this.mouse.y = -(event.clientY / height) * 2 + 1;
 
     raycaster.setFromCamera(mouse, this.camera);
 
@@ -470,20 +475,23 @@ export default function LinksScreen() {
   };
 
   const addCube = () => {
-    // Make a cube - notice that each unit is 1 meter in real life, we will make our box 0.1 meters
-    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-    // Simple color material
-    const material = new THREE.MeshPhongMaterial({
-      color: "red",
-    });
+    // // Make a cube - notice that each unit is 1 meter in real life, we will make our box 0.1 meters
+    // const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    // // Simple color material
+    // const material = new THREE.MeshPhongMaterial({
+    //   color: "red",
+    // });
 
-    // Combine our geometry and material
-    this.cube = new THREE.Mesh(geometry, material);
-    // Place the box 0.4 meters in front of us.
-    this.cube.position.z = -0.8;
+    // // Combine our geometry and material
+    // this.cube = new THREE.Mesh(geometry, material);
+    // // Place the box 0.4 meters in front of us.
+    // this.cube.position.z = -0.8;
 
-    // Add the cube to the scene
-    this.scene.add(this.cube);
+    // // Add the cube to the scene
+    // this.scene.add(this.cube);
+
+    console.log("width ", width);
+    console.log("height ", height);
   };
 
   const up = () => {
@@ -502,6 +510,56 @@ export default function LinksScreen() {
     this.cube.rotateY(2);
     this.cube.rotateX(2);
   };
+
+  this.panResponder = PanResponder.create({
+    // Ask to be the responder:
+    onStartShouldSetPanResponder: (evt, gestureState) => true,
+    onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+    onMoveShouldSetPanResponder: (evt, gestureState) => true,
+    onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
+
+    onPanResponderGrant: (evt, gestureState) => {
+      // var oldLength = this.mouse.length();
+
+      // if (oldLength !== 0) {
+      //   vector.multiplyScalar(1 + len / oldLength);
+      // }
+      console.log("hello from onPanResponderGrant", gestureState);
+      rayCaster(gestureState.x0, gestureState.y0);
+      // this.mouse.set(gestureState.x0, gestureState.y0);
+
+      // var oldLength = this.mouse.length();
+      //
+      // console.log("length =------------------< ", oldLength);
+      // this.mouse.x = gestureState.x0; //(gestureState.x0 / width) - 1;
+      // this.mouse.y = 1; //(gestureState.y0 / height)  + 1;
+      // console.log("this.mouse ====> ", this.mouse);
+
+      // The gesture has started. Show visual feedback so the user knows
+      // what is happening!
+      // gestureState.d{x,y} will be set to zero now
+    },
+    onPanResponderMove: (evt, gestureState) => {
+      // The most recent move distance is gestureState.move{X,Y}
+      // The accumulated gesture distance since becoming responder is
+      // gestureState.d{x,y}
+    },
+    onPanResponderTerminationRequest: (evt, gestureState) => true,
+    onPanResponderRelease: (evt, gestureState) => {
+      console.log("hello from onPanResponderRelease");
+      // The user has released all touches while this view is the
+      // responder. This typically means a gesture has succeeded
+    },
+    onPanResponderTerminate: (evt, gestureState) => {
+      // Another component has become the responder, so this gesture
+      // should be cancelled
+    },
+    onShouldBlockNativeResponder: (evt, gestureState) => {
+      // Returns whether this component should block native components from becoming the JS
+      // responder. Returns true by default. Is currently only supported on android.
+      return true;
+    },
+  });
 
   // You need to add the `isArEnabled` & `arTrackingConfiguration` props.
   // `isArRunningStateEnabled` Will show us the play/pause button in the corner.
@@ -561,22 +619,24 @@ export default function LinksScreen() {
     </Camera>
   ) : (
     <View style={{ flex: 1 }}>
-      <GraphicsView
-        style={{
-          height: "100%",
-          width: "100%",
-          alignItems: "stretch",
-          // position: "absolute",
-          // zIndex: -1,
-        }}
-        onContextCreate={onContextCreate}
-        onRender={onRender}
-        onResize={onResize}
-        isArEnabled
-        // isArRunningStateEnabled
-        isArCameraStateEnabled
-        arTrackingConfiguration={"ARWorldTrackingConfiguration"}
-      />
+      <View style={{ flex: 1 }} {...this.panResponder.panHandlers}>
+        <GraphicsView
+          style={{
+            height: "100%",
+            width: "100%",
+            alignItems: "stretch",
+            // position: "absolute",
+            // zIndex: -1,
+          }}
+          onContextCreate={onContextCreate}
+          onRender={onRender}
+          onResize={onResize}
+          isArEnabled
+          // isArRunningStateEnabled
+          isArCameraStateEnabled
+          arTrackingConfiguration={"ARWorldTrackingConfiguration"}
+        />
+      </View>
 
       <View
         style={{
@@ -609,9 +669,9 @@ export default function LinksScreen() {
         <TouchableOpacity onPress={() => playSound()}>
           <Icon name="ios-microphone" type="ionicon" size={30} color="white" />
         </TouchableOpacity> */}
-        <TouchableOpacity onPress={() => addCube()}>
+        <TouchableOpacity onPress={() => rayCaster()}>
           <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
-            addCube
+            raycaster
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => rotate()}>
