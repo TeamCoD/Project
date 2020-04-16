@@ -16,6 +16,8 @@ import { Camera } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Audio } from "expo-av";
 import { Icon } from "react-native-elements";
+import { DiceManager, DiceD6 } from "threejs-dice";
+import { World } from "cannon";
 
 // Let's alias ExpoTHREE.AR as ThreeAR so it doesn't collide with Expo.AR.
 import ExpoTHREE, { THREE } from "expo-three";
@@ -51,6 +53,7 @@ export default function LinksScreen() {
 
     // this.value = "";
     // ThreeAR.suppressWarnings();
+    this.player1 = true;
     setUpImages();
   }, []);
 
@@ -399,7 +402,7 @@ export default function LinksScreen() {
     // });
     // img.map.needsUpdate = true;
     const texture = await ExpoTHREE.loadAsync(
-      require("../assets/images/Mouse.png")
+      require("../assets/images/track.png")
     );
     // var texture = new THREE.TextureLoader().load(
     //   "https://miro.medium.com/max/10368/1*o8tTGo3vsocTKnCUyz0wHA.jpeg"
@@ -408,7 +411,7 @@ export default function LinksScreen() {
     // immediately use the texture for material creation
     var material = new THREE.MeshBasicMaterial({ map: texture });
 
-    // const geometry = new THREE.PlaneGeometry(0.3, 0.3);
+    const geometry = new THREE.PlaneGeometry(2, 0.5);
     // // Simple color material
     // const material = new THREE.MeshPhongMaterial({
     //   color: "white",
@@ -420,12 +423,53 @@ export default function LinksScreen() {
     // this.text = createText("Hello World");
     // // Place the box 0.4 meters in front of us.
     this.plane.position.z = -0.4;
-    this.plane.position.y = -0.2;
+    this.plane.position.y = -0.4;
+    this.plane.rotateX((Math.PI / 4) * 6);
 
     // this.text.position.z = -0.5;
 
     this.scene.add(this.plane);
     // this.scene.add(this.text);
+  };
+
+  const addCube = () => {
+    // Make a cube - notice that each unit is 1 meter in real life, we will make our box 0.1 meters
+    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    // Simple color material
+    const material = new THREE.MeshPhongMaterial({
+      color: "red",
+    });
+
+    // Combine our geometry and material
+    this.cube = new THREE.Mesh(geometry, material);
+    // Place the box 0.4 meters in front of us.
+    // this.cube.position.z = -0.4;
+    this.cube.position.z = -0.25;
+    this.cube.position.x = -0.85; //-0.85
+    this.cube.position.y = -0.3;
+    // this.cube.position.z = -0.3;
+
+    // Add the cube to the scene
+    this.scene.add(this.cube);
+
+    // console.log("width ", width);
+    // console.log("height ", height);
+
+    // ---------------------------------------------------
+
+    const geometry1 = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+
+    const material1 = new THREE.MeshPhongMaterial({
+      color: "blue",
+    });
+
+    this.cube2 = new THREE.Mesh(geometry1, material1);
+
+    this.cube2.position.z = -0.45;
+    this.cube2.position.x = -0.85;
+    this.cube2.position.y = -0.3;
+
+    this.scene.add(this.cube2);
   };
 
   const playSound = async () => {
@@ -440,13 +484,25 @@ export default function LinksScreen() {
     }
   };
 
+  const up = () => {
+    // this.text.position.z = -0.4;
+    // this.scene.remove(this.text);
+    this.cube.position.y = this.cube.position.y + 0.1;
+
+    // this.scene.add(this.text);
+  };
+
   const rayCaster = (newX, newY) => {
+    //Check RayCaster Length
     var raycaster = new THREE.Raycaster(); // create once
-    // var mouse = new THREE.Vector2(
-    //   (newX / width) * 2 - 1,
-    //   -(newY / height) * 2 + 1
-    // ); // create once
-    var mouse = new THREE.Vector2(0, 0.99);
+    var mouse = new THREE.Vector2(
+      (newX / width) * 2 - 1,
+      -(newY / height) * 2 + 1
+    ); // create once
+    // var mouse = new THREE.Vector2(0, 0.99);
+
+    this.x = mouse.x;
+    this.y = mouse.y;
 
     console.log("---RAYCASTER---", raycaster);
     console.log("--MOUSE--", mouse);
@@ -457,7 +513,7 @@ export default function LinksScreen() {
     raycaster.setFromCamera(mouse, this.camera);
 
     console.log("---this.text---", this.text);
-    var intersects = raycaster.intersectObjects([this.text]);
+    var intersects = raycaster.intersectObjects([this.cube]);
     // this.scene.remove(intersects);
     // console.log(
     //   "---INTERSECTS---",
@@ -470,62 +526,160 @@ export default function LinksScreen() {
         intersects[0].object
         // intersects[0].object.geometries[0].parameters.depth
       );
+      this.detect = true;
       intersects[0].object.material.color.set(0xffff00);
+
+      // this.cube.position.x = 0.07;
     }
   };
 
-  const addCube = () => {
-    // // Make a cube - notice that each unit is 1 meter in real life, we will make our box 0.1 meters
-    // const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-    // // Simple color material
-    // const material = new THREE.MeshPhongMaterial({
-    //   color: "red",
-    // });
+  useEffect(() => {
+    this.detected = false;
+    this.onStopNativeX = null;
+    this.onStopNativeY = null;
+  }, []);
 
-    // // Combine our geometry and material
-    // this.cube = new THREE.Mesh(geometry, material);
-    // // Place the box 0.4 meters in front of us.
-    // this.cube.position.z = -0.8;
+  const handleTouch = (newX, newY) => {
+    this.onTouchNativeX = newX;
+    this.onTouchNativeY = newY;
+    var raycaster = new THREE.Raycaster(); // create once
+    var mouse = new THREE.Vector2(
+      (newX / width) * 2 - 1,
+      -(newY / height) * 2 + 1
+    );
 
-    // // Add the cube to the scene
-    // this.scene.add(this.cube);
+    raycaster.setFromCamera(mouse, this.camera);
 
-    console.log("width ", width);
-    console.log("height ", height);
+    this.intersects = raycaster.intersectObjects(this.scene.children);
+
+    if (this.intersects.length !== 0) {
+      if (this.boi) {
+        this.boi.material.color.set("red");
+      }
+      for (var i = 0; i < intersects.length; i++) {
+        // intersects[i].object.material.color.set(0xff0000);
+        this.intersects[i].object.material.color.set("green");
+        this.boi = this.intersects[i].object;
+      }
+      // let gurl = { ...intersects[0].object };
+      // console.log(
+      //   "---INTERSECTS---",
+      //   this.scene.children
+      //   // gurl
+      //   // intersects[0].object
+      //   // intersects[0].object.geometries[0].parameters.depth
+      // );
+
+      this.detected = true;
+      // this.boi = intersects[0].object;
+      // intersects[0].object.material.color.set("green");
+      // this.cube.position.x = 0.07;
+    }
   };
 
-  const up = () => {
-    // this.text.position.z = -0.4;
-    // this.scene.remove(this.text);
-    this.cube.position.y = this.cube.position.y + 0.1;
+  //if (this.onStopNativeX !== newX || this.onStopNativeY !== newY)
 
-    // this.scene.add(this.text);
+  const handleMove = (newX, newY, newDX, newDY) => {
+    if (!this.onStopNativeX && !this.onStopNativeY) {
+      this.onStopNativeX = newX;
+      this.onStopNativeY = newY;
+    } else if (
+      Math.abs(this.onStopNativeX - newX) > 10 ||
+      Math.abs(this.onStopNativeY - newY) > 10
+    ) {
+      this.onStopNativeX = newX;
+      this.onStopNativeY = newY;
+      console.log("----------------onMOVE-ELSEIF");
+      console.log("this.onTouchNativeX", this.onTouchNativeX);
+      console.log("this.onTouchNativeY", this.onTouchNativeY);
+      console.log("this.onStopNativeY", this.onStopNativeY);
+      console.log("this.onStopNativeY", this.onStopNativeY);
+      console.log("newDX", newDX);
+      console.log("newDY", newDY);
+      console.log(
+        "cube before",
+        this.cube.position.x,
+        " ",
+        this.cube.position.y
+      );
+
+      this.boi.position.x += newDX * 0.000352778;
+      this.boi.position.y -= newDY * 0.000352778;
+      this.boi.material.color.set("green");
+      console.log(
+        "cube after",
+        this.cube.position.x,
+        " ",
+        this.cube.position.y
+      );
+    } else {
+      console.log("----------------onMOVE-ELSE");
+      console.log("this.onTouchNativeX", this.onTouchNativeX);
+      console.log("this.onTouchNativeY", this.onTouchNativeY);
+      console.log("this.onStopNativeY", this.onStopNativeY);
+      console.log("this.onStopNativeY", this.onStopNativeY);
+      console.log("newDX", newDX);
+      console.log("newDY", newDY);
+      console.log(
+        "cube before",
+        this.cube.position.x,
+        " ",
+        this.cube.position.y
+      );
+    }
   };
 
-  const rotate = () => {
-    // this.cube.remove();
-    this.cube.position.y = this.cube.position.y + 0.1;
+  const handleRelease = (newX, newY, newDX, newDY) => {
+    this.onStopNativeX = newX;
+    this.onStopNativeY = newY;
+    console.log("----------------onRELEASE");
+    console.log("this.onTouchNativeX", this.onTouchNativeX);
+    console.log("this.onTouchNativeY", this.onTouchNativeY);
+    console.log("this.onStopNativeY", this.onStopNativeY);
+    console.log("this.onStopNativeY", this.onStopNativeY);
+    console.log("newDX", newDX);
+    console.log("newDY", newDY);
+    console.log("cube before", this.cube.position.x, " ", this.cube.position.y);
 
-    this.cube.rotateZ(2);
-    this.cube.rotateY(2);
-    this.cube.rotateX(2);
+    // if (this.onTouchNativeX > this.onStopNativeX) {
+    //   this.cube.position.x += -newDX * 0.000352778;
+    // }
+    // if (this.onTouchNativeY > this.onStopNativeY) {
+    //   this.cube.position.y += -newDY * 0.000352778;
+    // }
+
+    // if (this.onTouchNativeX < this.onStopNativeX) {
+    //   this.cube.position.x += newDX * 0.000352778;
+    // }
+
+    // if (this.onTouchNativeY < this.onStopNativeY) {
+    //   this.cube.position.y += newDY * 0.000352778;
+    // }
+
+    this.boi.position.x += newDX * 0.000352778;
+    this.boi.position.y -= newDY * 0.000352778;
+    this.boi.material.color.set("yellow");
+    console.log("cube after", this.cube.position.x, " ", this.cube.position.y);
   };
 
   this.panResponder = PanResponder.create({
     // Ask to be the responder:
     onStartShouldSetPanResponder: (evt, gestureState) => true,
-    onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
-    onMoveShouldSetPanResponder: (evt, gestureState) => true,
-    onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
+    // onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+    // onMoveShouldSetPanResponder: (evt, gestureState) => true,
+    // onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
 
-    onPanResponderGrant: (evt, gestureState) => {
+    onPanResponderGrant: ({ nativeEvent }, gestureState) => {
+      handleTouch(nativeEvent.locationX, nativeEvent.locationY);
+      // ---------------------------------------
       // var oldLength = this.mouse.length();
 
       // if (oldLength !== 0) {
       //   vector.multiplyScalar(1 + len / oldLength);
       // }
-      console.log("hello from onPanResponderGrant", gestureState);
-      rayCaster(gestureState.x0, gestureState.y0);
+      // console.log("------gestureState", gestureState);
+      // console.log("------NativeEvent", nativeEvent);
+      // rayCaster(nativeEvent.locationX, nativeEvent.locationY);
       // this.mouse.set(gestureState.x0, gestureState.y0);
 
       // var oldLength = this.mouse.length();
@@ -539,27 +693,284 @@ export default function LinksScreen() {
       // what is happening!
       // gestureState.d{x,y} will be set to zero now
     },
-    onPanResponderMove: (evt, gestureState) => {
+    onPanResponderMove: ({ nativeEvent }, gestureState) => {
+      if (this.detected) {
+        handleMove(
+          nativeEvent.locationX,
+          nativeEvent.locationY,
+          gestureState.dx,
+          gestureState.dy
+        );
+      }
+      // this.cube.position.x += gestureState.dx;
+      // this.cube.position.y += gestureState.dy;
+      // rayCaster(gestureState.dx, gestureState.dy);
+      // (newX+dx / width) * 2 - 1,
+      // -(newY+dy / height) * 2 + 1
+      // ----------------
+      // console.log("--------------onMove-gestureState", gestureState);
+      // console.log("--------------onMove-nativeEvent", nativeEvent);
+      // this.cube.position.x = (this.x + gestureState.dx / width) * 2 - 1;
+      // this.cube.position.y = -(this.y + gestureState.dy / height) * 2 + 1;
+      // ------------------
       // The most recent move distance is gestureState.move{X,Y}
       // The accumulated gesture distance since becoming responder is
       // gestureState.d{x,y}
     },
-    onPanResponderTerminationRequest: (evt, gestureState) => true,
-    onPanResponderRelease: (evt, gestureState) => {
-      console.log("hello from onPanResponderRelease");
+    onPanResponderRelease: ({ nativeEvent }, gestureState) => {
+      if (this.detected) {
+        handleRelease(
+          nativeEvent.locationX,
+          nativeEvent.locationY,
+          gestureState.dx,
+          gestureState.dy
+        );
+        checkShape();
+        // this.detected = false;
+      }
+      // ---------------------------------
+      // console.log("hello from onPanResponderRelease");
+      //------------------------------------------
+      // console.log("--------------onRelease-gestureState", gestureState);
+      // console.log("--------------onRelease-nativeEvent", nativeEvent);
+      // this.cube.position.x += gestureState.dx * 0.000352778;
+      // this.cube.position.y += gestureState.dy * 0.000352778;
+      //------------------------------------------
+      // this.x = this.cube.position.x;
+      // this.cube.position.y = gestureState.dy;
       // The user has released all touches while this view is the
       // responder. This typically means a gesture has succeeded
     },
-    onPanResponderTerminate: (evt, gestureState) => {
-      // Another component has become the responder, so this gesture
-      // should be cancelled
-    },
-    onShouldBlockNativeResponder: (evt, gestureState) => {
-      // Returns whether this component should block native components from becoming the JS
-      // responder. Returns true by default. Is currently only supported on android.
-      return true;
-    },
   });
+
+  const handleStartGame = () => {
+    const cubeGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const cubeMaterial = new THREE.MeshPhongMaterial({
+      color: "blue",
+    });
+    this.cube1 = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    const boi = { ...this.cube1 };
+    console.log("this.cube => ", this.cube1);
+    console.log("this.cube => ", boi.geometry);
+    this.cube1.position.x = Math.random();
+    this.cube1.position.y = Math.random();
+    this.cube1.position.z = -0.4;
+    this.scene.add(this.cube1);
+
+    const sphereGeometry = new THREE.SphereGeometry(0.1, 0.1, 0.1);
+    const sphereMaterial = new THREE.MeshPhongMaterial({
+      color: "orange",
+    });
+    this.sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    this.sphere.position.x = Math.random();
+    this.sphere.position.y = Math.random();
+    this.sphere.position.z = -0.4;
+    this.scene.add(this.sphere);
+
+    const coneGeometry = new THREE.ConeGeometry(0.1, 0.1, 0.1);
+    const coneMaterial = new THREE.MeshPhongMaterial({
+      color: "blue",
+    });
+    this.cone = new THREE.Mesh(coneGeometry, coneMaterial);
+    this.cone.position.x = Math.random();
+    this.cone.position.y = Math.random();
+    this.cone.position.z = -0.4;
+    this.scene.add(this.cone);
+  };
+
+  const checkShape = () => {
+    let boi = { ...this.cube };
+    let gurl = { ...this.boi };
+
+    // console.log(
+    //   "--------x difference",
+    //   Math.abs(boi.position.x - gurl.position.x)
+    // );
+    // console.log(
+    //   "--------y difference",
+    //   Math.abs(boi.position.y - gurl.position.y)
+    // );
+    if (
+      Math.abs(boi.position.x - gurl.position.x) < 0.04 &&
+      Math.abs(boi.position.y - gurl.position.y) < 0.04
+    ) {
+      if (boi.geometry.type === gurl.geometry.type) {
+        // alert("You WIN!");
+      }
+      // alert("NOICE");
+    }
+  };
+
+  const makeDice = async () => {
+    if (this.dice) {
+      this.scene.remove(this.dice);
+    }
+    var materials = [
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/1.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/2.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/3.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/4.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/5.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/6.png")),
+      }),
+    ];
+
+    this.dice = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, 0.1, 0.1, 1, 1, 1),
+      materials
+    );
+
+    // console.log("------------------When created", this.dice);
+
+    this.dice.position.z = -0.2;
+    this.dice.position.x = -0.2;
+    this.dice.position.y = -0.2;
+
+    this.scene.add(this.dice);
+    return this.dice;
+  };
+
+  const random = async () => {
+    const dice = await makeDice();
+    const sides = [
+      { id: 1, x: 7, y: 7 },
+      { id: 2, x: 5, y: 6 },
+      { id: 3, x: 6, y: 6 },
+      { id: 4, x: 5, y: 3 },
+      { id: 5, x: 7, y: 8 },
+      { id: 6, x: 7, y: 6 },
+    ];
+
+    const random = Math.floor(Math.random() * 6);
+    console.log("random", random);
+
+    let counter = 0;
+    let counterX = 0;
+    let counterY = 0;
+    let turn = true; //true = x; false = y
+    const id = setInterval(() => {
+      if (counter === sides[random].x + sides[random].y) {
+        rollDice(sides[random].id); //
+        clearInterval(id);
+      } else {
+        console.log("---------this.cube", this.cube.position.x);
+        if (turn && counterX !== sides[random].x) {
+          setTimeout(() => {
+            dice.rotateX(Math.PI / 4);
+          }, 250);
+          setTimeout(() => {
+            dice.rotateX(Math.PI / 4);
+          }, 500);
+          turn = false;
+          // console.log("======================================");
+          // console.log("before X", counterX);
+          counterX++;
+          // console.log("after X", counterX);
+        } else {
+          if (counterY !== sides[random].y) {
+            setTimeout(() => {
+              dice.rotateY(Math.PI / 4);
+            }, 250);
+            setTimeout(() => {
+              dice.rotateY(Math.PI / 4);
+            }, 500);
+
+            // console.log("======================================");
+            // console.log("before Y", counterY);
+            counterY++;
+            // console.log("after Y", counterY);
+          } else {
+            setTimeout(() => {
+              dice.rotateX(Math.PI / 4);
+            }, 250);
+            setTimeout(() => {
+              dice.rotateX(Math.PI / 4);
+            }, 500);
+          }
+          turn = true;
+        }
+        counter++;
+      }
+    }, 500);
+    return sides[random].id;
+  };
+
+  const rollDice = async (steps) => {
+    console.log("steps before ", steps);
+
+    if (this.player1) {
+      if (this.cube.position.x + steps * 0.1 >= 0.8) {
+        this.cube.position.x = 0.8;
+        alert("YOU WIN Player 1!");
+      } else {
+        let counter = 0;
+        let id = setInterval(() => {
+          if (counter === steps - 1) {
+            clearInterval(id);
+          }
+          this.cube.position.x += 0.1;
+          counter++;
+        }, 1000);
+      }
+      this.player1 = false;
+      // console.log("steps * 0.01 ", steps * 0.01);
+      // this.cube.position.x += steps * 0.1;
+
+      // if (steps !== 1) {
+      //   steps -= 1;
+      // }
+      // console.log("steps after ", steps);
+    } else {
+      if (this.cube2.position.x + steps * 0.1 >= 0.8) {
+        this.cube2.position.x = 0.8;
+        alert("YOU WIN Player 2!");
+      } else {
+        let counter = 0;
+        let id = setInterval(() => {
+          if (counter === steps - 1) {
+            clearInterval(id);
+          }
+          this.cube2.position.x += 0.1;
+          counter++;
+        }, 1000);
+      }
+      this.player1 = true;
+    }
+  };
+
+  const rotateX = () => {
+    this.dice.rotateX(Math.PI / 4);
+  };
+
+  const rotateY = () => {
+    this.plane.rotateX(Math.PI / 4);
+  };
+
+  const rotateZ = () => {
+    this.dice.rotateZ(0.5);
+  };
+
+  const diceInfo = async () => {
+    // console.log("rotateX", this.dice.rotation.x);
+    // console.log("rotateY", this.dice.rotation.y);
+
+    // random = 0
+    // roll = [{id:1, rotateX:4, rotateY:5},
+    // {id:2, rotateX:7, rotateY:3},]
+    const yo = { ...this.dice };
+    console.log("----this.dice", yo);
+  };
 
   // You need to add the `isArEnabled` & `arTrackingConfiguration` props.
   // `isArRunningStateEnabled` Will show us the play/pause button in the corner.
@@ -641,6 +1052,7 @@ export default function LinksScreen() {
       <View
         style={{
           flexDirection: "row",
+          flexWrap: "wrap",
           backgroundColor: "transparent",
           // flex: 1,
           position: "absolute",
@@ -649,12 +1061,18 @@ export default function LinksScreen() {
         }}
       >
         <TouchableOpacity onPress={() => setScanned(false)}>
-          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
-            Scan Again
-          </Text>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Scan</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => text()}>
+        {/* <TouchableOpacity onPress={() => handleStartGame()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
+            Start Game
+          </Text>
+        </TouchableOpacity> */}
+        {/* <TouchableOpacity onPress={() => text()}>
           <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Text</Text>
+        </TouchableOpacity> */}
+        <TouchableOpacity onPress={() => dice()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Dice</Text>
         </TouchableOpacity>
         {/* <TouchableOpacity onPress={() => translate()}>
           <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
@@ -669,19 +1087,36 @@ export default function LinksScreen() {
         <TouchableOpacity onPress={() => playSound()}>
           <Icon name="ios-microphone" type="ionicon" size={30} color="white" />
         </TouchableOpacity> */}
-        <TouchableOpacity onPress={() => rayCaster()}>
+        <TouchableOpacity onPress={() => addCube()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Cube</Text>
+        </TouchableOpacity>
+        {/* <TouchableOpacity onPress={() => rayCaster()}>
           <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
             raycaster
           </Text>
+        </TouchableOpacity> */}
+        <TouchableOpacity onPress={() => random()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Roll</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => rotate()}>
+        {/* <TouchableOpacity onPress={() => rotateY()}>
           <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
-            rotate
+            rotateY
+          </Text>
+        </TouchableOpacity> */}
+        <TouchableOpacity onPress={() => showDetails()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
+            Details
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => up()}>
+        {/* 
+        <TouchableOpacity onPress={() => rotateZ()}>
+          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
+            rotateZ
+          </Text>
+        </TouchableOpacity> */}
+        {/* <TouchableOpacity onPress={() => up()}>
           <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Up</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* 
         <TouchableOpacity onPress={() => translate()}>
