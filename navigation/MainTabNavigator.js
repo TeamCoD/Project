@@ -8,7 +8,8 @@ import HomeScreen from "../screens/HomeScreen";
 import LinksScreen from "../screens/LinksScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import BarCodeScreen from "../screens/BarCodeScreen";
-
+import RacingScreen from "../screens/RacingScreen";
+import MathScreen from "../screens/MathScreen";
 const config = Platform.select({
   web: { headerMode: "screen" },
   default: {},
@@ -23,16 +24,16 @@ const HomeStack = createStackNavigator(
 
 HomeStack.navigationOptions = {
   tabBarLabel: "Home",
-  // tabBarIcon: ({ focused }) => (
-  //   // <TabBarIcon
-  //   //   focused={focused}
-  //   //   name={
-  //   //     Platform.OS === "ios"
-  //   //       ? `ios-information-circle${focused ? "" : "-outline"}`
-  //   //       : "md-information-circle"
-  //   //   }
-  //   // />
-  // )
+  tabBarIcon: ({ focused }) => (
+    <TabBarIcon
+      focused={focused}
+      name={
+        Platform.OS === "ios"
+          ? `ios-information-circle${focused ? "" : "-outline"}`
+          : "md-information-circle"
+      }
+    />
+  ),
 };
 
 HomeStack.path = "";
@@ -46,31 +47,31 @@ const LinksStack = createStackNavigator(
 
 LinksStack.navigationOptions = {
   tabBarLabel: "Links",
-  // tabBarIcon: ({ focused }) => (
-  //   <TabBarIcon
-  //     focused={focused}
-  //     name={Platform.OS === "ios" ? "ios-link" : "md-link"}
-  //   />
-  // )
+  tabBarIcon: ({ focused }) => (
+    <TabBarIcon
+      focused={focused}
+      name={Platform.OS === "ios" ? "ios-link" : "md-link"}
+    />
+  ),
 };
 
 LinksStack.path = "";
 
 const SettingsStack = createStackNavigator(
   {
-    Settings: SettingsScreen,
+    Settings: MathScreen,
   },
   config
 );
 
 SettingsStack.navigationOptions = {
-  tabBarLabel: "Settings",
-  // tabBarIcon: ({ focused }) => (
-  //   <TabBarIcon
-  //     focused={focused}
-  //     name={Platform.OS === "ios" ? "ios-options" : "md-options"}
-  //   />
-  // )
+  tabBarLabel: "Math",
+  tabBarIcon: ({ focused }) => (
+    <TabBarIcon
+      focused={focused}
+      name={Platform.OS === "ios" ? "ios-options" : "md-options"}
+    />
+  ),
 };
 
 SettingsStack.path = "";
@@ -84,21 +85,41 @@ const BarCodeStack = createStackNavigator(
 
 BarCodeStack.navigationOptions = {
   tabBarLabel: "BarCode",
-  // tabBarIcon: ({ focused }) => (
-  //   <TabBarIcon
-  //     focused={focused}
-  //     name={Platform.OS === "ios" ? "ios-options" : "md-options"}
-  //   />
-  // )
+  tabBarIcon: ({ focused }) => (
+    <TabBarIcon
+      focused={focused}
+      name={Platform.OS === "ios" ? "ios-options" : "md-options"}
+    />
+  ),
 };
 
 BarCodeStack.path = "";
+
+const RacingStack = createStackNavigator(
+  {
+    Racing: RacingScreen,
+  },
+  config
+);
+
+RacingStack.navigationOptions = {
+  tabBarLabel: "Racing",
+  tabBarIcon: ({ focused }) => (
+    <TabBarIcon
+      focused={focused}
+      name={Platform.OS === "ios" ? "ios-options" : "md-options"}
+    />
+  ),
+};
+
+RacingStack.path = "";
 
 const tabNavigator = createBottomTabNavigator({
   HomeStack,
   LinksStack,
   BarCodeStack,
   SettingsStack,
+  RacingStack,
 });
 
 tabNavigator.path = "";

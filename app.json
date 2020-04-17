@@ -21,7 +21,7 @@
       "supportsTablet": true
     },
     "packagerOpts": {
-      "assetExts": ["jpg", "png", "jpeg", "ttf", "mp3"]
+      "assetExts": ["jpg", "png", "jpeg", "ttf", "mp3", "mp4"]
     }
   }
 }
