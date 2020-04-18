@@ -152,7 +152,7 @@ export default function App(props) {
         onFinish={() => handleFinishLoading(setLoadingComplete)}
       />
     );
-  } else if (allowedIn) {
+  } else if (!allowedIn) {
     //use camera, show the pic to the user
     //include a "Take Photo" button.
     //keep track of how many, after 10, train the model
