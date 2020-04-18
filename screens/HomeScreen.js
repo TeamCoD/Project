@@ -4,6 +4,8 @@ import {
   TouchableOpacity,
   Picker,
   ImageBackground,
+  StyleSheet,
+  Dimensions,
 } from "react-native";
 import { BarCodeScanner } from "expo-barcode-scanner";
 
@@ -14,6 +16,7 @@ import { Camera } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Audio } from "expo-av";
 import { Icon, Button } from "react-native-elements";
+import { Linking } from "expo";
 
 import ExpoTHREE, { THREE } from "expo-three";
 import * as ThreeAR from "expo-three-ar";
@@ -22,6 +25,7 @@ import { View as GraphicsView } from "expo-graphics";
 import ReactNativePickerModule from "react-native-picker-module";
 import Clarifai from "clarifai";
 console.disableYellowBox = true;
+const { width } = Dimensions.get("screen");
 const app = new Clarifai.App({
   apiKey: "53f2015ac28941f391f9acf6116309f6",
 });
@@ -33,6 +37,7 @@ export default function HomeScreen() {
   const sounds = {
     fr: require("../assets/sound/Mouse.mp3"),
     en: require("../assets/sound/mouseEn.mp3"),
+    es: require("../assets/sound/mouseES.mp3"),
   };
   useEffect(() => {
     THREE.suppressExpoWarnings(true);
@@ -60,7 +65,6 @@ export default function HomeScreen() {
 
     this.scene.add(new THREE.AmbientLight(0xffffff));
 
-    // createGroupImage();
     createMouseImage();
   };
 
@@ -167,33 +171,36 @@ export default function HomeScreen() {
   };
 
   const text = async () => {
-    console.log("WE IN TEXT", word);
     this.text = createText(word);
     this.text.position.z = -0.4;
-    // this.text.position.x = 0.8;
+
     this.text.position.y = -0.1;
 
     this.scene.add(this.text);
   };
 
   const translate = async () => {
-    if (this.text2) {
-      this.scene.remove(this.text2);
+    if (language !== "") {
+      if (this.text2) {
+        this.scene.remove(this.text2);
+      }
+
+      const apiKey =
+        "trnsl.1.1.20200405T190411Z.3952e7ff33c5cc91.6fe34ca177fffee6eba1a6656ab45f443284c9f0";
+
+      const response = await fetch(
+        `https://translate.yandex.net/api/v1.5/tr.json/translate?key=${apiKey}&text=${word}&lang=${language}`
+      );
+
+      const json = await response.json();
+      this.text2 = createText(json.text[0]);
+      this.text2.position.z = -0.4;
+      this.text2.position.x = 0;
+      this.text2.position.y = -0.2;
+      this.scene.add(this.text2);
+    } else {
+      alert("Select Language ☻");
     }
-
-    const apiKey =
-      "trnsl.1.1.20200405T190411Z.3952e7ff33c5cc91.6fe34ca177fffee6eba1a6656ab45f443284c9f0";
-
-    const response = await fetch(
-      `https://translate.yandex.net/api/v1.5/tr.json/translate?key=${apiKey}&text=${word}&lang=${language}`
-    );
-
-    const json = await response.json();
-    this.text2 = createText(json.text[0]);
-    this.text2.position.z = -0.4;
-    this.text2.position.x = 0;
-    this.text2.position.y = -0.2;
-    this.scene.add(this.text2);
   };
 
   const playSound = async () => {
@@ -208,7 +215,7 @@ export default function HomeScreen() {
 
   const scan = async () => {
     setNotDetected(false);
-    console.log("Scanning");
+
     let lists = await app.models.list();
     let listArray = Object.entries(lists);
     listArray = listArray.slice(0, 2);
@@ -222,7 +229,7 @@ export default function HomeScreen() {
     modelNames.forEach(async (modelName) => {
       const predict = await predictModel(base64, modelName);
       const result = 1 * predict.outputs[0].data.concepts[0].value;
-      console.log("result", result);
+
       if (result > 0.9) {
         setWord(modelName);
         setScanned(true);
@@ -232,10 +239,11 @@ export default function HomeScreen() {
   };
 
   const [scanned, setScanned] = useState(true);
-  const [language, setLanguage] = useState("fr");
+  const [language, setLanguage] = useState("");
   const [word, setWord] = useState(null);
   const [camera, setCamera] = useState(null);
   const [notDetected, setNotDetected] = useState(null);
+  const [barCodeScanned, setBarCodeScanned] = useState(false);
 
   useEffect(() => {
     if (scanned && word !== null) {
@@ -247,9 +255,8 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!scanned) {
-      console.log("useEffect scan");
       scan();
-      // text();
+
       setTimeout(() => {
         setNotDetected(true);
       }, 5000);
@@ -257,15 +264,49 @@ export default function HomeScreen() {
   }, [scanned]);
   const [home, setHome] = useState(true);
 
+  const handleBarCodeScanned = async ({ type, data }) => {
+    setBarCodeScanned(false);
+
+    Linking.openURL(data);
+  };
+
+  const handleLanguage = (lan) => {
+    if (lan === "English") setLanguage("en");
+    else if (lan === "Spanish") setLanguage("es");
+    else setLanguage("fr");
+  };
+
   return home ? (
     <ImageBackground
       source={require("../assets/images/background2.png")}
       style={{ flex: 1, alignItems: "center" }}
     >
       <View style={{ top: "60%" }}>
-        <Button title="Enter" onPress={() => setHome(false)} />
+        <Button
+          title="Enter"
+          onPress={() => setHome(false)}
+          buttonStyle={{
+            backgroundColor: "#006666",
+            width: "70%",
+            marginLeft: "auto",
+            marginRight: "auto",
+          }}
+        />
       </View>
     </ImageBackground>
+  ) : barCodeScanned ? (
+    <View
+      style={{
+        flex: 1,
+        flexDirection: "column",
+        justifyContent: "flex-end",
+      }}
+    >
+      <BarCodeScanner
+        onBarCodeScanned={handleBarCodeScanned}
+        style={StyleSheet.absoluteFillObject}
+      />
+    </View>
   ) : scanned ? (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
@@ -288,7 +329,7 @@ export default function HomeScreen() {
       <View
         style={{
           flexDirection: "row",
-          // flexWrap: "wrap",
+
           backgroundColor: "transparent",
           position: "absolute",
           top: "95%",
@@ -328,28 +369,32 @@ export default function HomeScreen() {
             }}
           >
             <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
-              {language ? `Selected ${language} ▼` : "Show Language Picker ▼"}
+              {language ? `Selected ${language} ▼` : "Language ▼"}
             </Text>
           </TouchableOpacity>
         )}
+
         <ReactNativePickerModule
           pickerRef={(e) => (pickerRef = e)}
           selectedValue={language}
           title={"Select a language"}
-          items={["fr", "en"]}
+          items={["French", "Spanish", "English"]}
           onValueChange={(valueText, index) => {
-            setLanguage(valueText);
+            handleLanguage(valueText);
           }}
         />
 
-        {/* <Picker
-          selectedValue={language}
-          style={{ height: 300, width: 150 }}
-          onValueChange={(itemValue, itemIndex) => setLanguage(itemValue)}
-        >
-          <Picker.Item label="English" value="en" />
-          <Picker.Item label="French" value="fr" />
-        </Picker> */}
+        {!barCodeScanned && word && (
+          <TouchableOpacity
+            onPress={() => {
+              setBarCodeScanned(true);
+            }}
+          >
+            <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
+              Scan Barcode
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   ) : (
@@ -366,25 +411,35 @@ export default function HomeScreen() {
           backgroundColor: "transparent",
           flexDirection: "row",
           justifyContent: "space-between",
-          width: "50%",
+          // width: "50%",
         }}
       >
         <Text
           style={{
             position: "absolute",
-            top: "20%",
-            left: "20%",
+            top: "15%",
+            left: "25%",
             fontSize: 30,
             color: "white",
           }}
         >
-          Keep Camera Still Scanning....
+          Keep Camera Still
+        </Text>
+        <Text
+          style={{
+            position: "absolute",
+            top: "20%",
+            left: "35%",
+            fontSize: 30,
+            color: "white",
+          }}
+        >
+          Scanning....
         </Text>
 
         {notDetected && (
           <TouchableOpacity
             style={{
-              // flex: 0.1,
               alignSelf: "flex-end",
               alignItems: "center",
             }}

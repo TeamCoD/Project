@@ -154,7 +154,7 @@ export default function RacingScreen() {
     );
 
     this.dice.position.z = far + -0.05;
-    // this.dice.position.x = -0.2;
+
     this.dice.position.y = -0.4;
 
     this.scene.add(this.dice);
@@ -173,7 +173,7 @@ export default function RacingScreen() {
     ];
 
     const random = Math.floor(Math.random() * 6);
-    console.log("random", random);
+    
 
     let counter = 0;
     let counterX = 0;
@@ -181,10 +181,10 @@ export default function RacingScreen() {
     let turn = true;
     const id = setInterval(() => {
       if (counter === sides[random].x + sides[random].y) {
-        rollDice(sides[random].id); //
+        rollDice(sides[random].id);
         clearInterval(id);
       } else {
-        console.log("---------this.cube", this.cube.position.x);
+       
         if (turn && counterX !== sides[random].x) {
           setTimeout(() => {
             dice.rotateX(Math.PI / 4);
@@ -228,7 +228,7 @@ export default function RacingScreen() {
   }, []);
 
   const rollDice = async (steps) => {
-    console.log("steps before ", steps);
+    
 
     if (this.player1) {
       if (this.cube.position.x + steps * 0.1 >= 0.8) {

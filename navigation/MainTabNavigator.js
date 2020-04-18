@@ -2,7 +2,7 @@ import React from "react";
 import { Platform } from "react-native";
 import { createStackNavigator } from "react-navigation-stack";
 import { createBottomTabNavigator } from "react-navigation-tabs";
-
+import { Icon } from "react-native-elements";
 import TabBarIcon from "../components/TabBarIcon";
 import HomeScreen from "../screens/HomeScreen";
 import LinksScreen from "../screens/LinksScreen";
@@ -10,6 +10,7 @@ import SettingsScreen from "../screens/SettingsScreen";
 import BarCodeScreen from "../screens/BarCodeScreen";
 import RacingScreen from "../screens/RacingScreen";
 import MathScreen from "../screens/MathScreen";
+import Colors from "../constants/Colors";
 const config = Platform.select({
   web: { headerMode: "screen" },
   default: {},
@@ -25,13 +26,11 @@ const HomeStack = createStackNavigator(
 HomeStack.navigationOptions = {
   tabBarLabel: "Home",
   tabBarIcon: ({ focused }) => (
-    <TabBarIcon
-      focused={focused}
-      name={
-        Platform.OS === "ios"
-          ? `ios-information-circle${focused ? "" : "-outline"}`
-          : "md-information-circle"
-      }
+    <Icon
+      name="home"
+      type="antdesign"
+      size={26}
+      color={focused ? Colors.tabIconSelected : Colors.tabIconDefault}
     />
   ),
 };
@@ -67,9 +66,11 @@ const SettingsStack = createStackNavigator(
 SettingsStack.navigationOptions = {
   tabBarLabel: "Math",
   tabBarIcon: ({ focused }) => (
-    <TabBarIcon
-      focused={focused}
-      name={Platform.OS === "ios" ? "ios-options" : "md-options"}
+    <Icon
+      name="calculator"
+      type="antdesign"
+      size={24}
+      color={focused ? Colors.tabIconSelected : Colors.tabIconDefault}
     />
   ),
 };
@@ -86,9 +87,11 @@ const BarCodeStack = createStackNavigator(
 BarCodeStack.navigationOptions = {
   tabBarLabel: "BarCode",
   tabBarIcon: ({ focused }) => (
-    <TabBarIcon
-      focused={focused}
-      name={Platform.OS === "ios" ? "ios-options" : "md-options"}
+    <Icon
+      name="barcode"
+      type="antdesign"
+      size={24}
+      color={focused ? Colors.tabIconSelected : Colors.tabIconDefault}
     />
   ),
 };
@@ -105,9 +108,11 @@ const RacingStack = createStackNavigator(
 RacingStack.navigationOptions = {
   tabBarLabel: "Racing",
   tabBarIcon: ({ focused }) => (
-    <TabBarIcon
-      focused={focused}
-      name={Platform.OS === "ios" ? "ios-options" : "md-options"}
+    <Icon
+      name="car-sports"
+      type="material-community"
+      size={30}
+      color={focused ? Colors.tabIconSelected : Colors.tabIconDefault}
     />
   ),
 };
@@ -116,10 +121,10 @@ RacingStack.path = "";
 
 const tabNavigator = createBottomTabNavigator({
   HomeStack,
-  LinksStack,
-  BarCodeStack,
   SettingsStack,
   RacingStack,
+  LinksStack,
+  BarCodeStack,
 });
 
 tabNavigator.path = "";

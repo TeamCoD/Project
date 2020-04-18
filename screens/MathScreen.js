@@ -47,7 +47,6 @@ export default function MathScreen() {
   const onContextCreate = async ({ gl, scale: pixelRatio, width, height }) => {
     AR.setPlaneDetection(AR.PlaneDetectionTypes.Vertical);
 
-    // Create a 3D renderer
     this.renderer = new ExpoTHREE.Renderer({
       gl,
       pixelRatio,
@@ -74,10 +73,6 @@ export default function MathScreen() {
       height: 0.005,
       curveSegments: 12,
       bevelEnabled: false,
-      // bevelThickness: 0,
-      // bevelSize: 0,
-      // bevelOffset: 0.1,
-      // bevelSegments: 0,
     });
     const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     return new THREE.Mesh(geometry, material);
@@ -139,13 +134,6 @@ export default function MathScreen() {
       answer["textboi"] = ans.id;
       this.scene.add(answer);
     });
-    // for (var i = 0; i < 10; i++) {
-    //   let answer = createText(`${i}`);
-    //   answer.position.z = -0.2;
-    //   answer.position.x = 0.1 * (Math.floor(Math.random() * 11) - 5);
-    //   answer.position.y = 0.1 * (Math.floor(Math.random() * 11) - 5);
-    //   this.scene.add(answer);
-    // }
   };
 
   const translate = async () => {
@@ -208,16 +196,11 @@ export default function MathScreen() {
     this.x = mouse.x;
     this.y = mouse.y;
 
-    console.log("---RAYCASTER---", raycaster);
-    console.log("--MOUSE--", mouse);
-
     raycaster.setFromCamera(mouse, this.camera);
 
-    console.log("---this.text---", this.text);
     var intersects = raycaster.intersectObjects([this.cube]);
 
     if (intersects.length !== 0) {
-      console.log("---INTERSECTS---", intersects[0].object);
       this.detect = true;
       intersects[0].object.material.color.set(0xffff00);
     }
@@ -232,7 +215,7 @@ export default function MathScreen() {
   const handleTouch = (newX, newY) => {
     this.onTouchNativeX = newX;
     this.onTouchNativeY = newY;
-    var raycaster = new THREE.Raycaster(); // create once
+    var raycaster = new THREE.Raycaster();
     var mouse = new THREE.Vector2(
       (newX / width) * 2 - 1,
       -(newY / height) * 2 + 1
@@ -250,7 +233,7 @@ export default function MathScreen() {
         if (this.intersects[i].object !== this.question) {
           this.intersects[i].object.material.color.set("green");
           this.selected = this.intersects[i].object;
-          console.log("-----this.selected", this.selected.textboi);
+
           this.detected = true;
         } else {
           this.detected = false;
@@ -269,62 +252,20 @@ export default function MathScreen() {
     ) {
       this.onStopNativeX = newX;
       this.onStopNativeY = newY;
-      // console.log("----------------onMOVE-ELSEIF");
-      // console.log("this.onTouchNativeX", this.onTouchNativeX);
-      // console.log("this.onTouchNativeY", this.onTouchNativeY);
-      // console.log("this.onStopNativeY", this.onStopNativeY);
-      // console.log("this.onStopNativeY", this.onStopNativeY);
-      // console.log("newDX", newDX);
-      // console.log("newDY", newDY);
-      // console.log(
-      //   "cube before",
-      //   this.cube.position.x,
-      //   " ",
-      //   this.cube.position.y
-      // );
 
       this.selected.position.x += newDX * 0.000352778;
       this.selected.position.y -= newDY * 0.000352778;
       this.selected.material.color.set("green");
-      // console.log(
-      //   "cube after",
-      //   this.cube.position.x,
-      //   " ",
-      //   this.cube.position.y
-      // );
-    } else {
-      // console.log("----------------onMOVE-ELSE");
-      // console.log("this.onTouchNativeX", this.onTouchNativeX);
-      // console.log("this.onTouchNativeY", this.onTouchNativeY);
-      // console.log("this.onStopNativeY", this.onStopNativeY);
-      // console.log("this.onStopNativeY", this.onStopNativeY);
-      // console.log("newDX", newDX);
-      // console.log("newDY", newDY);
-      // console.log(
-      //   "cube before",
-      //   this.cube.position.x,
-      //   " ",
-      //   this.cube.position.y
-      // );
     }
   };
 
   const handleRelease = (newX, newY, newDX, newDY) => {
     this.onStopNativeX = newX;
     this.onStopNativeY = newY;
-    // console.log("----------------onRELEASE");
-    // console.log("this.onTouchNativeX", this.onTouchNativeX);
-    // console.log("this.onTouchNativeY", this.onTouchNativeY);
-    // console.log("this.onStopNativeY", this.onStopNativeY);
-    // console.log("this.onStopNativeY", this.onStopNativeY);
-    // console.log("newDX", newDX);
-    // console.log("newDY", newDY);
-    // console.log("cube before", this.cube.position.x, " ", this.cube.position.y);
 
     this.selected.position.x += newDX * 0.000352778;
     this.selected.position.y -= newDY * 0.000352778;
     this.selected.material.color.set("yellow");
-    // console.log("cube after", this.cube.position.x, " ", this.cube.position.y);
   };
 
   this.panResponder = PanResponder.create({
@@ -352,7 +293,6 @@ export default function MathScreen() {
           gestureState.dy
         );
         checkSum();
-        // checkShape();
       }
     },
   });
@@ -375,12 +315,6 @@ export default function MathScreen() {
     this.question.position.y = 0.1;
 
     this.scene.add(this.question);
-
-    // this.question = createText("1 + 1");
-    // this.question.position.z = -0.2;
-    // this.question.position.x = 0;
-
-    // this.scene.add(this.question);
   };
 
   const putAnswer = async () => {
@@ -429,17 +363,13 @@ export default function MathScreen() {
     while (this.scene.children.length > 0) {
       this.scene.remove(this.scene.children[0]);
     }
+    this.detected = false;
   };
 
   const checkSum = async () => {
     const question = { ...this.question };
     const selected = { ...this.selected };
 
-    console.log("questionX", question.position.x);
-    console.log("questionY", question.position.y);
-
-    console.log("selectedX", selected.position.x);
-    console.log("selectedY", selected.position.y);
     if (
       Math.abs(question.position.x - selected.position.x) < 0.15 &&
       Math.abs(question.position.y - selected.position.y) < 0.075
@@ -451,9 +381,7 @@ export default function MathScreen() {
         try {
           await soundObject.loadAsync(require("../assets/sound/victory.mp3"));
           await soundObject.playAsync();
-          // Your sound is playing!
         } catch (error) {
-          // An error occurred!
           console.log("error", error);
         }
       } else {
@@ -462,9 +390,7 @@ export default function MathScreen() {
         try {
           await soundObject.loadAsync(require("../assets/sound/lost.mp3"));
           await soundObject.playAsync();
-          // Your sound is playing!
         } catch (error) {
-          // An error occurred!
           console.log("error", error);
         }
       }
@@ -500,7 +426,7 @@ export default function MathScreen() {
           flexDirection: "row",
           flexWrap: "wrap",
           backgroundColor: "transparent",
-          // flex: 1,
+
           position: "absolute",
           top: "95%",
           zIndex: 1,
@@ -516,19 +442,6 @@ export default function MathScreen() {
             Reset
           </Text>
         </TouchableOpacity>
-        {/* <TouchableOpacity onPress={() => handleStartGame()}>
-              <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
-                Start Game
-              </Text>
-            </TouchableOpacity> */}
-        {/* <TouchableOpacity onPress={() => text()}>
-              <Text style={{ fontSize: 18, margin: 10, color: "white" }}>Text</Text>
-            </TouchableOpacity> */}
-        {/* <TouchableOpacity onPress={() => createAnswers()}>
-          <Text style={{ fontSize: 18, margin: 10, color: "white" }}>
-            Answers
-          </Text>
-        </TouchableOpacity> */}
       </View>
     </View>
   );

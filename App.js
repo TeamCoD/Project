@@ -51,18 +51,6 @@ const trainModel = async () => {
 };
 
 const predictModel = async (base64) => {
-  // let lists = await app.models.list();
-  // let listArray = Object.entries(lists);
-  // listArray = listArray.slice(0, 2);
-  // let modelNames = [];
-  // listArray.map((item) => {
-  //   modelNames.push(item[1].name);
-  // });
-
-  // modelNames.map((item) => {
-
-  // });
-
   const response = app.models.predict({ id: "Mouse" }, base64);
   console.log("predict res ", response);
   return response;

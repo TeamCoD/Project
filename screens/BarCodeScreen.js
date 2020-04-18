@@ -18,7 +18,7 @@ export default function BarCodeScreen() {
     //alert(`Bar code with type ${type} and data ${data} has been scanned!`);
     console.log(" data ", data);
     const response = await fetch(
-      `https://api.barcodelookup.com/v2/products?barcode=${data}&formatted=y&key=ft64v8jyjsgihs3ta690cqqastqr4v`
+      `https://api.barcodelookup.com/v2/products?barcode=file:///private/var/containers/Bundle/Application/0E8547A7-6B46-45BD-8E84-464D91B4C975/Exponent.app/0671860013624}&formatted=y&key=ft64v8jyjsgihs3ta690cqqastqr4v`
     );
     const json = await response.json();
     console.log("json", JSON.stringify(json));
