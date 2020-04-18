@@ -86,14 +86,36 @@ export default function RacingScreen() {
     this.scene.add(this.track);
   };
 
-  const addPlayers = () => {
-    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+  const addPlayers = async () => {
+    // const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
 
-    const material = new THREE.MeshPhongMaterial({
-      color: "red",
-    });
+    var materials = [
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/blue2.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/blue1.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/blue5.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/4.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/blue3.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/blue4.png")),
+      }),
+    ];
 
-    this.cube = new THREE.Mesh(geometry, material);
+    this.cube = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 0.1, 0.1, 1, 1, 1),
+      materials
+    );
+
+    // this.cube = new THREE.Mesh(geometry, material);
 
     this.cube.position.z = far + -0.25;
     this.cube.position.x = -0.85;
@@ -101,13 +123,35 @@ export default function RacingScreen() {
 
     this.scene.add(this.cube);
 
-    const geometry1 = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    var materials2 = [
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(
+          require("../assets/images/redFront.png")
+        ),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/redback.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/redTop.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/4.png")),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(
+          require("../assets/images/redRight.png")
+        ),
+      }),
+      new THREE.MeshBasicMaterial({
+        map: await ExpoTHREE.loadAsync(require("../assets/images/redLeft.png")),
+      }),
+    ];
 
-    const material1 = new THREE.MeshPhongMaterial({
-      color: "blue",
-    });
-
-    this.cube2 = new THREE.Mesh(geometry1, material1);
+    this.cube2 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 0.1, 0.1, 1, 1, 1),
+      materials2
+    );
 
     this.cube2.position.z = far + -0.45;
     this.cube2.position.x = -0.85;
@@ -173,7 +217,6 @@ export default function RacingScreen() {
     ];
 
     const random = Math.floor(Math.random() * 6);
-    
 
     let counter = 0;
     let counterX = 0;
@@ -184,7 +227,6 @@ export default function RacingScreen() {
         rollDice(sides[random].id);
         clearInterval(id);
       } else {
-       
         if (turn && counterX !== sides[random].x) {
           setTimeout(() => {
             dice.rotateX(Math.PI / 4);
@@ -228,11 +270,16 @@ export default function RacingScreen() {
   }, []);
 
   const rollDice = async (steps) => {
-    
-
     if (this.player1) {
       if (this.cube.position.x + steps * 0.1 >= 0.8) {
         this.cube.position.x = 0.8;
+        const soundObject = new Audio.Sound();
+        try {
+          await soundObject.loadAsync(require("../assets/sound/victory.mp3"));
+          await soundObject.playAsync();
+        } catch (error) {
+          console.log("error", error);
+        }
         alert("YOU WIN Player 1!");
       } else {
         let counter = 0;
@@ -248,6 +295,13 @@ export default function RacingScreen() {
     } else {
       if (this.cube2.position.x + steps * 0.1 >= 0.8) {
         this.cube2.position.x = 0.8;
+        const soundObject = new Audio.Sound();
+        try {
+          await soundObject.loadAsync(require("../assets/sound/victory.mp3"));
+          await soundObject.playAsync();
+        } catch (error) {
+          console.log("error", error);
+        }
         alert("YOU WIN Player 2!");
       } else {
         let counter = 0;
